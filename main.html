@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>キマるポモドーロ</title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/custom.css" rel="stylesheet">
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container">
+      <header class="navbar navbar-fixed-top navbar-inverse">
+        <div class="navbar-inner">
+          <nav>
+            <ul class="nav pull-right">
+              <li><a href="/">Home</a></li>
+              <li><a href="/about">About</a></li>
+            </ul>
+          </nav>
+        </div>
+      </header>
+    </div>
+      <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+    <div class="container theme-showcase" role="main">
+      <div class="row">
+        <div class="col-md-8">
+          <div id="player"></div>
+          <br>
+          <button type="button" class="btn btn-lg btn-primary" id="play">Let's Go!</button>
+          <button type="button" class="btn btn-lg btn-success" id="reload">次の曲</button>
+        </div>
+        <div class="col-md-4" style="background-color: rgba( 255, 255, 255, 0.55 ); border-radius: 5px; height: 440px;">
+          <p></p>
+        </div>
+      </div>
+    </div>
+    <script>
+    // https://developers.google.com/youtube/iframe_api_reference
+
+    // プレイリスト
+    //var playlist = ["d2ymeJ-CWVg", "HIXMtQTe3Pg", "BqHq5g9FJeI", "8dELD-3blj8", "j4OrOdgt7nc"];
+    var playlist = ["O5RdMvgk8b0"];
+
+    // 次を再生
+    function playNext() {
+      // プレイリストにビデオが残ってたら先頭のビデオを再生
+      if (playlist.length > 0) {
+        player.loadVideoById(playlist.shift());
+      }
+    }
+
+    // IFrame Player APIを非同期にロード
+    var tag = document.createElement('script');
+    tag.src = "http://www.youtube.com/player_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // APIをダウンロードしたら<iframe>とYouTubeプレイヤーを生成
+    var player;
+    function onYouTubePlayerAPIReady() {
+      player = new YT.Player('player', {
+        height: '390',
+        width: '640',
+        videoId: 'C8zMEwBtEAg',
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange,
+          'onError': onPlayerError // added
+        }
+      });
+    }
+
+    // プレイヤが準備できたら呼び出される
+    function onPlayerReady(event) {
+      event.target.playVideo();
+    }
+
+    // ステータスが変更されたら呼び出される
+    // ビデオが終わったら次を再生
+    var done = false;
+    function onPlayerStateChange(event) {
+      if (event.data == YT.PlayerState.ENDED) {
+        playNext();
+      } else if (event.data == YT.PlayerState.PLAYING && !done) {
+        setTimeout(pauseVideo, 1500000);
+        $("#play").html("一時停止");
+        done = false; //秒ごとに止める
+      } else if (event.data == YT.PlayerState.PAUSED) {
+        $("#play").html("　再生　");
+        //NOTE: videoの残り時間が25分以下なら?
+      }
+    }
+
+    //ビデオが止まったら、休憩タイマーを表示、ポモドーロを増やす、ボタンの表示内容と機能が変わる
+
+    function pauseVideo() {
+      player.pauseVideo();
+      $("p").append("<img src='lsd.png' alt='pomodolo' style='width: 40px; height: 40px;'>");
+    }
+
+    // エラーが起きたら次を再生
+    function onPlayerError(event) {
+      playNext();
+    }
+/**
+    function onPlayerStateChange(event) {
+       /* プレーヤーのステータスが変更される度に発生
+       dbg("PlayerState:"+event.data);
+       switch(event.data){
+          case YT.PlayerState.ENDED:
+          case YT.PlayerState.PAUSED:
+          case YT.PlayerState.CUED:
+             $("#play").html("再生");
+             break;
+          case YT.PlayerState.PLAYING:
+          case YT.PlayerState.BUFFERING:
+             $("#play").html("一時停止");
+             break;
+          default:
+             $("#play").html("再生");
+             break;
+       }
+    }
+*/
+    function play(){
+       dbg("play");
+       player.playVideo(); /* 再生 */
+       $(this).html("一時停止");
+    }
+    function pause(){
+       dbg("pause");
+       player.pauseVideo(); /* 一時停止 */
+       $(this).html("　再生　");
+    }
+    function stop(){
+       dbg("stop");
+       player.stopVideo(); /* 停止 */
+       player.cueVideoById(videoID);
+       $(this).html("一時停止");
+    }
+    $("#play").click(function(){
+       var label=$(this).html();
+       dbg("play");
+       if(label=="　再生　"){
+          play();
+       }else{
+          pause();
+       }
+    });
+    $("#stop").click(function(){
+       stop();
+    });
+    $("#seek").click(function(){
+       player.seekTo(30,true);
+       play();
+    });
+
+    function dbg(str){
+       $("#debuglog").val(str+"\n"+$("#debuglog").val());
+          if(window.console && window.console.log){
+            console.log(str);
+          }
+        }
+
+    $(function() {
+      countDown();
+    });
+
+    function countDown() {
+      var startDateTime = new Date();
+      var endDateTime = new Date("January 01,2014 00:00:00");
+      var left = endDateTime - startDateTime;
+      var a_day = 24 * 60 * 60 * 1000;
+
+    // 期限から現在までの『残時間の日の部分』
+      var d = Math.floor(left / a_day)
+
+    // 期限から現在までの『残時間の時間の部分』
+      var h = Math.floor((left % a_day) / (60 * 60 * 1000))
+
+    // 残時間を秒で割って残分数を出す。
+    // 残分数を60で割ることで、残時間の「時」の余りとして、『残時間の分の部分』を出す
+      var m = Math.floor((left % a_day) / (60 * 1000)) % 60
+
+    // 残時間をミリ秒で割って、残秒数を出す。
+    // 残秒数を60で割った余りとして、「秒」の余りとしての残「ミリ秒」を出す。
+    // 更にそれを60で割った余りとして、「分」で割った余りとしての『残時間の秒の部分』を出す
+      var s = Math.floor((left % a_day) / 1000) % 60 % 60
+
+      $("#TimeLeft").text(d + '日' + h + '時間' + m + '分' + s + '秒');
+        setTimeout('countDown()', 1000);
+    }
+    </script>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <video autoplay loop poster="http://mattgrossdesign.com/raw-media/first-frame-screencap" id="video-background" muted>
+      <source src="https://d3ahqwdvfhobke.cloudfront.net/static/video/join-wavo.mp4" type="video/webm">
+    </video>
+  </body>
+</html>
